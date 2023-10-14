@@ -337,34 +337,59 @@ const updateUserAddress = asyncHandler(async (req, res) => {
 //
 const updateCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  const { pid, quantity, color } = req.body;
+  const { pid, quantity = 1, color, price } = req.body;
   if (!pid || !quantity || !color) throw new Error("Missing input!!");
-  const cartUser = await User.findById(_id);
+  const cartUser = await User.findById(_id).select("cart");
   const alreadyCart = cartUser.cart.find(
     (el) => el.product.toString() === pid && el.color.toString() === color
   );
 
-  if (alreadyCart) {
+  if (alreadyCart && alreadyCart.color === color) {
     const response = await User.updateOne(
       { cart: { $elemMatch: alreadyCart } },
-      { $set: { "cart.$.quantity": quantity } },
+      { $set: { "cart.$.quantity": quantity, "cart.$.price": price } },
       { new: true }
     );
     return res.status(200).json({
       success: response ? true : false,
-      updateUser: response,
+      mes: response
+        ? "Cập Nhập Giỏ Hàng Thành Công!"
+        : "Some thing went wrong!",
     });
   } else {
     const response = await User.findByIdAndUpdate(
       _id,
-      { $push: { cart: { product: pid, quantity, color } } },
+      { $push: { cart: { product: pid, quantity, color, price } } },
       { new: true }
     );
     return res.status(200).json({
       success: response ? true : false,
-      updateUser: response,
+      mes: response ? "Đã Thêm Vào Giỏ Hàng!" : "Some thing went wrong!",
     });
   }
+});
+const removeCart = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { pid, color } = req.params;
+  if (!pid) throw new Error("Missing input!!");
+  const cartUser = await User.findById(_id).select("cart");
+  const alreadyCart = cartUser.cart.find(
+    (el) => el.product.toString() === pid && el.color === color
+  );
+  if (!alreadyCart)
+    return res.status(200).json({
+      success: true,
+      mes: "Update your cart!",
+    });
+  const response = await User.findByIdAndUpdate(
+    _id,
+    { $pull: { cart: { product: pid, color } } },
+    { new: true }
+  );
+  return res.status(200).json({
+    success: response ? true : false,
+    mes: response ? "Đã Xóa Sản Phẩm Khỏi Giỏ Hàng!" : "Some thing went wrong!",
+  });
 });
 module.exports = {
   register,
@@ -382,4 +407,5 @@ module.exports = {
   updateCart,
   finalRegister,
   getOneById,
+  removeCart,
 };

@@ -14,21 +14,90 @@ const createBlog = asyncHandler(async (req, res) => {
   });
 });
 const getBlogs = asyncHandler(async (req, res) => {
-  const { title } = req.query;
-  if (title) {
-    const response = await Blog.find({ category: title });
-    return res.status(200).json({
-      success: response ? true : false,
-      blogs: response ? response : "Cannot get blog!!!",
-    });
-  } else {
-    const response = await Blog.find();
-    return res.status(200).json({
-      success: response ? true : false,
-      blogs: response ? response : "Cannot get blog!!!",
-    });
+  const queries = { ...req.query };
+  // Tach cac truong dac biet ra khoi queries
+  const excludeFields = ["limit", "sort", "page", "fields"];
+  excludeFields.forEach((el) => delete queries[el]);
+  // format sang mongose
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  const formatQueries = JSON.parse(queryString);
+  let colorqueryOj = {};
+  // Filter
+  if (queries?.title)
+    formatQueries.title = { $regex: queries.title, $options: "i" };
+  if (queries?.category)
+    formatQueries.category = {
+      $regex: queries.category,
+      $options: "i",
+    };
+  // if (queries?.color) {
+  //   delete formatQueries.color;
+  //   const colorArr = queries.color?.split(",");
+  //   const colorQuery = colorArr.map((el) => ({
+  //     color: { $regex: el, $options: "i" },
+  //   }));
+  //   colorqueryOj = { $or: colorQuery };
+  // }
+  if (req.query.q) {
+    delete formatQueries.q;
+    formatQueries["$or"] = [
+      { title: { $regex: req.query.q, $options: "i" } },
+      { brand: { $regex: req.query.q, $options: "i" } },
+      { category: { $regex: req.query.q, $options: "i" } },
+    ];
   }
+  const q = { ...colorqueryOj, ...formatQueries };
+  formatQueries.color = { $regex: queries.color, $options: "i" };
+  let queryCommand = Blog.find(q);
+
+  // // 2) Sorting
+  // if (req.query.sort) {
+  //   const sortBy = req.query.sort.split(",").join(" ");
+  //   queryCommand = queryCommand.sort(sortBy);
+  // }
+
+  // Filter limit
+  // if (req.query.fields) {
+  //   const fields = req.query.fields.split(",").join(" ");
+  //   queryCommand = queryCommand.select(fields);
+  // }
+
+  // Pagination
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || process.env.LIMIT_PRODUCT;
+  const skip = (page - 1) * limit;
+  queryCommand.skip(skip).limit(limit);
+  //Excute query
+  queryCommand.exec(async (err, response) => {
+    if (err) throw new Error(err.message);
+    const counts = await Blog.find(q).countDocuments();
+    return res.status(200).json({
+      success: response ? true : false,
+      blogs: response ? response : "Cannot get blogs",
+      counts,
+    });
+  });
 });
+// const getBlogs = asyncHandler(async (req, res) => {
+//   const { title } = req.query;
+//   if (title) {
+//     const response = await Blog.find({ category: title });
+//     return res.status(200).json({
+//       success: response ? true : false,
+//       blogs: response ? response : "Cannot get blog!!!",
+//     });
+//   } else {
+//     const response = await Blog.find();
+//     return res.status(200).json({
+//       success: response ? true : false,
+//       blogs: response ? response : "Cannot get blog!!!",
+//     });
+//   }
+// });
 
 const updateBlog = asyncHandler(async (req, res) => {
   const { bid } = req.params;

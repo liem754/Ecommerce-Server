@@ -12,6 +12,8 @@ router.get("/current/:_id", verifyAccessToken, ctrls.getOneById);
 
 router.put("/address", [verifyAccessToken], ctrls.updateUserAddress);
 router.put("/cart", [verifyAccessToken], ctrls.updateCart);
+router.put("/remove-cart/:pid/:color", [verifyAccessToken], ctrls.removeCart);
+
 router.post("/refreshtoken", ctrls.refreshAccessToken);
 
 router.get("/logout", ctrls.logout);
