@@ -24,12 +24,7 @@ router.delete("/:_id", [verifyAccessToken, isAdmin], ctrls.deleteUser);
 router.put(
   "/current",
   verifyAccessToken,
-  uploader.fields([
-    {
-      name: "avatar",
-      maxCount: 10,
-    },
-  ]),
+  uploader.single("avatar"),
   ctrls.updateUser
 );
 router.put("/:uid", [verifyAccessToken, isAdmin], ctrls.updateUserByAdmin);

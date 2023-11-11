@@ -19,7 +19,9 @@ var userSchema = new mongoose.Schema(
       unique: true,
     },
     avatar: {
-      type: Array,
+      type: String,
+      default:
+        "https://static2.yan.vn/YanNews/2167221/202102/facebook-cap-nhat-avatar-doi-voi-tai-khoan-khong-su-dung-anh-dai-dien-e4abd14d.jpg",
     },
     mobile: {
       type: String,
@@ -41,13 +43,12 @@ var userSchema = new mongoose.Schema(
         quantity: Number,
         color: String,
         price: Number,
+        title: String,
+        thumb: String,
       },
     ],
 
-    address: {
-      type: Array,
-      default: [],
-    },
+    address: { type: String },
     wishlist: [{ type: mongoose.Types.ObjectId, ref: "Product" }],
     isBlocked: {
       type: Boolean,

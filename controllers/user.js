@@ -295,10 +295,21 @@ const deleteUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   //
   const { _id } = req.user;
+  const {
+    email,
+    mobile,
+    firstname,
+    lastname,
+    address,
+
+    avatar,
+  } = req.body;
   if (!_id || Object.keys(req.body).length === 0)
     throw new Error("Missing inputs");
-  if (req.files) req.body.avatar = req.files.avatar.map((el) => el.path);
-  const response = await User.findByIdAndUpdate(_id, req.body, {
+
+  const data = { email, mobile, firstname, lastname, address };
+  if (req.file) data.avatar = req.file.path;
+  const response = await User.findByIdAndUpdate(_id, data, {
     new: true,
   }).select("-password -role -refreshToken");
   return res.status(200).json({
@@ -337,8 +348,9 @@ const updateUserAddress = asyncHandler(async (req, res) => {
 //
 const updateCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  const { pid, quantity = 1, color, price } = req.body;
-  if (!pid || !quantity || !color) throw new Error("Missing input!!");
+  const { pid, quantity = 1, color, price, title, thumb } = req.body;
+  if (!pid || !quantity || !color || !title || !thumb)
+    throw new Error("Missing input!!");
   const cartUser = await User.findById(_id).select("cart");
   const alreadyCart = cartUser.cart.find(
     (el) => el.product.toString() === pid && el.color.toString() === color
@@ -359,7 +371,9 @@ const updateCart = asyncHandler(async (req, res) => {
   } else {
     const response = await User.findByIdAndUpdate(
       _id,
-      { $push: { cart: { product: pid, quantity, color, price } } },
+      {
+        $push: { cart: { product: pid, quantity, color, price, title, thumb } },
+      },
       { new: true }
     );
     return res.status(200).json({

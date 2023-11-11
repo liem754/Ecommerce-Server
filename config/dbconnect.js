@@ -4,7 +4,7 @@ const dbConnect = async () => {
     mongoose.set("strictQuery", true);
     const conn = await mongoose.connect(process.env.MONGODB_URL);
     if (conn.connection.readyState === 1) {
-      console.log("Connect db is success");
+      console.log("Connect db is success !!");
     } else {
       console.log("Connect db is failed");
     }
