@@ -36,6 +36,14 @@ const updateStatus = asyncHandler(async (req, res) => {
     response: response ? response : "Something went wrong",
   });
 });
+const deleteOrder = asyncHandler(async (req, res) => {
+  const { oid } = req.params;
+  const response = await Order.remove({ _id: oid });
+  return res.json({
+    success: response ? true : false,
+    response: response ? response : "Something went wrong",
+  });
+});
 const getOrders = asyncHandler(async (req, res) => {
   const queries = { ...req.query };
   const { _id } = req.user;
@@ -137,4 +145,5 @@ module.exports = {
   updateStatus,
   getOrders,
   getOrdersbyAdmin,
+  deleteOrder,
 };
