@@ -3,9 +3,33 @@ const ctrls = require("../controllers/user");
 const uploader = require("../config/cloudinary.config");
 
 const { verifyAccessToken, isAdmin } = require("../middlewares/verifyToken");
-router.post("/register", ctrls.register);
+const validateDto = require("../middlewares/validation");
+const Joi = require("joi");
+const { stringReq, numberReq } = require("../middlewares/joiSchema");
+
+router.post(
+  "/register",
+  validateDto(
+    Joi.object({
+      email: stringReq,
+      name: stringReq,
+      password: stringReq,
+      phone: numberReq,
+    })
+  ),
+  ctrls.register
+);
 router.put("/finalregister/:token", ctrls.finalRegister);
-router.post("/login", ctrls.login);
+router.post(
+  "/login",
+  validateDto(
+    Joi.object({
+      email: stringReq,
+      password: stringReq,
+    })
+  ),
+  ctrls.login
+);
 
 router.get("/current", verifyAccessToken, ctrls.getOne);
 router.get("/current/:_id", verifyAccessToken, ctrls.getOneById);

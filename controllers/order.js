@@ -31,6 +31,8 @@ const updateStatus = asyncHandler(async (req, res) => {
     { status },
     { new: true }
   );
+  console.log(status);
+
   return res.json({
     success: response ? true : false,
     response: response ? response : "Something went wrong",

@@ -1,15 +1,17 @@
 const { default: mongoose } = require("mongoose");
+const { print, OutputType } = require("../helpers/print");
 const dbConnect = async () => {
   try {
     mongoose.set("strictQuery", true);
-    const conn = await mongoose.connect(process.env.MONGODB_URL);
+    const conn = await mongoose.connect(process.env.MONGODB_URL2);
     if (conn.connection.readyState === 1) {
-      console.log("Connect db is success !!");
+      print("Connect db is success !", OutputType.SUCCESS);
     } else {
-      console.log("Connect db is failed");
+      print("Connect db is failed !", OutputType.ERROR);
     }
   } catch (error) {
-    console.log("Connect db is failed");
+    print("Connect db is failed !", OutputType.ERROR);
+
     throw new Error(error);
   }
 };

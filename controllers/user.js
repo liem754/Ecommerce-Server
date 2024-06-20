@@ -8,23 +8,18 @@ const jwt = require("jsonwebtoken");
 const sendMail = require("../ultils/sendMail");
 const crypto = require("crypto");
 const makeToken = require("uniqid");
+const { throwError } = require("../middlewares/errHandler");
 
 const register = asyncHandler(async (req, res, next) => {
-  const { email, firstname, lastname, password, mobile } = req.body;
-  if (!email || !firstname || !lastname || !password || !mobile)
-    return res.status(400).json({
-      success: false,
-      mes: "Missing input",
-    });
+  const { email, name, password, phone } = req.body;
   const user = await User.findOne({ email });
-  if (user) throw new Error("User has existed!");
+  if (user) throwError(402, "Tài khoản đã tồn tại, vui lòng đăng nhập!", res);
   else {
     const token = makeToken();
     const newUser = await User.create({
       email: btoa(email) + "@" + token,
-      firstname,
-      lastname,
-      mobile,
+      name,
+      phone,
       password,
     });
     if (newUser) {
@@ -47,7 +42,6 @@ const register = asyncHandler(async (req, res, next) => {
 });
 //
 const finalRegister = asyncHandler(async (req, res) => {
-  // const cookie = req.cookies;
   const { token } = req.params;
   const notActive = await User.findOne({ email: new RegExp(`${token}$`) });
   if (notActive) {
@@ -60,60 +54,40 @@ const finalRegister = asyncHandler(async (req, res) => {
       ? "Register is successfully!!.Please login now!"
       : "Something went wrong",
   });
-  // const response = await User.create({
-  //   email: cookie?.dataregister?.email,
-  //   password: cookie?.dataregister?.password,
-  //   firstname: cookie?.dataregister?.firstname,
-  //   lastname: cookie?.dataregister?.lastname,
-  //   mobile: cookie?.dataregister?.mobile,
-  // });
-
-  // if (response)
-  //   return res.redirect(`${process.env.URL_CLIENT}/finalregister/true`);
-  // else {
-  //   return res.redirect(`${process.env.URL_CLIENT}/finalregister/false`);
-  // }
-
-  // return;
-  // res.status(200).json({
-  //   success: response ? true : false,
-  //   mes: response
-  //     ? "Register is successfully!!.Please login now!"
-  //     : "Something went wrong",
-  // });
 });
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({
-      sucess: false,
-      mes: "Missing input",
-    });
+
   const response = await User.findOne({ email });
-  if (response && (await response.isCorrectPassword(password))) {
-    //Tách password và role ra từ response
-    const { password, role, refreshToken, ...userData } = response.toObject();
-    //Tạo accessToken
-    const accessToken = generateAccessToken(response._id, role);
-    //Tạo refreshToken
-    const newrefreshToken = generateRefreshToken(response._id);
-    //Đẩy refreshToken vô database
-    await User.findByIdAndUpdate(
-      response._id,
-      { newrefreshToken },
-      { new: true }
-    );
-    //Lưu refreshToken vào cookie
-    res.cookie("refreshToken", newrefreshToken, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-    return res.status(200).json({
-      success: true,
-      accessToken,
-      userData,
-      mes: "Login success!",
-    });
+  if (response) {
+    if (await response.isCorrectPassword(password)) {
+      //Tách password và role ra từ response
+      const { password, role, ...userData } = response.toObject();
+      //Tạo accessToken
+      const accessToken = generateAccessToken(response._id, role);
+      //Tạo refreshToken
+      const newrefreshToken = generateRefreshToken(response._id);
+      //Đẩy refreshToken vô database
+      await User.findByIdAndUpdate(
+        response._id,
+        { refreshToken: newrefreshToken },
+        { new: true }
+      );
+      //Lưu refreshToken vào cookie
+      res.cookie("refreshToken", newrefreshToken, {
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      return res.status(200).json({
+        success: true,
+        accessToken,
+        userData,
+
+        mes: "Login success!",
+      });
+    } else {
+      throwError(401, "Sai password rồi !", res);
+    }
   } else {
     throw new Error("Invalid credentials!");
   }
@@ -184,9 +158,9 @@ const logout = asyncHandler(async (req, res) => {
 //Gữi mail change password
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  if (!email) throw new Error("Missing email");
+  if (!email) throwError(401, "Missing email !", res);
   const user = await User.findOne({ email });
-  if (!user) throw new Error("User not found");
+  if (!user) throwError(400, "User not found !", res);
   const resetToken = user.createPasswordChangedToken();
   await user.save();
 
@@ -205,7 +179,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 });
 const resetPassword = asyncHandler(async (req, res) => {
   const { password, token } = req.body;
-  if (!password || !token) throw new Error("Missing imputs");
+  if (!password || !token) throwError(403, "Missing input !", res);
   const passwordResetToken = crypto
     .createHash("sha256")
     .update(token)
@@ -214,7 +188,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     passwordResetToken,
     passwordResetExpires: { $gt: Date.now() },
   });
-  if (!user) throw new Error("Invalid reset token");
+  if (!user) throwError(400, "Invalid resetToken !", res);
   user.password = password;
   user.passwordResetToken = undefined;
   user.passwordChangedAt = Date.now();
@@ -226,11 +200,6 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 const getUsers = asyncHandler(async (req, res) => {
-  // const response = await User.find().select("-refreshToken -password -role");
-  // return res.status(200).json({
-  //   success: response ? true : false,
-  //   users: response,
-  // });
   const queries = { ...req.query };
   const excludeFields = ["limit", "sort", "page", "fields"];
   excludeFields.forEach((el) => delete queries[el]);
@@ -295,19 +264,11 @@ const deleteUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   //
   const { _id } = req.user;
-  const {
-    email,
-    mobile,
-    firstname,
-    lastname,
-    address,
-
-    avatar,
-  } = req.body;
+  const { email, phone, name, address } = req.body;
   if (!_id || Object.keys(req.body).length === 0)
     throw new Error("Missing inputs");
 
-  const data = { email, mobile, firstname, lastname, address };
+  const data = { email, phone, name, address };
   if (req.file) data.avatar = req.file.path;
   const response = await User.findByIdAndUpdate(_id, data, {
     new: true,

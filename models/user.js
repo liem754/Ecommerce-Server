@@ -5,14 +5,11 @@ const { type } = require("os");
 // Declare the Schema of the Mongo model
 var userSchema = new mongoose.Schema(
   {
-    firstname: {
+    name: {
       type: String,
       required: true,
     },
-    lastname: {
-      type: String,
-      required: true,
-    },
+
     email: {
       type: String,
       required: true,
@@ -23,7 +20,7 @@ var userSchema = new mongoose.Schema(
       default:
         "https://static2.yan.vn/YanNews/2167221/202102/facebook-cap-nhat-avatar-doi-voi-tai-khoan-khong-su-dung-anh-dai-dien-e4abd14d.jpg",
     },
-    mobile: {
+    phone: {
       type: String,
       required: true,
       unique: true,
