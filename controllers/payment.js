@@ -16,7 +16,7 @@ const payment = asyncHandler(async (req, res) => {
 
   const embed_data = {
     //sau khi hoàn tất thanh toán sẽ đi vào link này (thường là link web thanh toán thành công của mình)
-    redirecturl: "https://phongthuytaman.com",
+    redirecturl: "http://localhost:3000",
   };
 
   const items = [...orders];
@@ -33,7 +33,7 @@ const payment = asyncHandler(async (req, res) => {
     //khi thanh toán xong, zalopay server sẽ POST đến url này để thông báo cho server của mình
     //Chú ý: cần dùng ngrok để public url thì Zalopay Server mới call đến được
     callback_url: "https://b074-1-53-37-194.ngrok-free.app/callback",
-    description: `Lazada - Payment for the order #${transID}`,
+    description: `Mosa - Payment for the order #${transID}`,
     bank_code: "",
   };
 
@@ -57,9 +57,41 @@ const payment = asyncHandler(async (req, res) => {
   try {
     const result = await axios.post(config.endpoint, null, { params: order });
 
-    return res.status(200).json(result.data);
+    return res
+      .status(200)
+      .json({
+        ...result.data,
+        app_trans_id: `${moment().format("YYMMDD")}_${transID}`,
+      });
   } catch (error) {
     return error;
   }
 });
-module.exports = { payment };
+const checkPayment = asyncHandler(async (req, res) => {
+  const { app_trans_id } = req.body;
+
+  let postData = {
+    app_id: config.app_id,
+    app_trans_id, // Input your app_trans_id
+  };
+
+  let data = postData.app_id + "|" + postData.app_trans_id + "|" + config.key1; // appid|app_trans_id|key1
+  postData.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
+
+  let postConfig = {
+    method: "post",
+    url: "https://sb-openapi.zalopay.vn/v2/query",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    data: qs.stringify(postData),
+  };
+
+  try {
+    const result = await axios(postConfig);
+    return res.status(200).json(result.data);
+  } catch (error) {
+    console.log(error);
+  }
+});
+module.exports = { payment, checkPayment };

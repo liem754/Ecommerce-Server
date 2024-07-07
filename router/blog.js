@@ -16,7 +16,17 @@ router.post(
   ]),
   ctrls.createBlog
 );
-router.put("/:bid", [verifyAccessToken, isAdmin], ctrls.updateBlog);
+router.put(
+  "/updateblog/:bid",
+  [verifyAccessToken, isAdmin],
+  uploader.fields([
+    {
+      name: "images",
+      maxCount: 10,
+    },
+  ]),
+  ctrls.updateBlog
+);
 router.delete("/:bid", [verifyAccessToken, isAdmin], ctrls.deleteBlog);
 router.put(
   "/uploadimage/:bid",

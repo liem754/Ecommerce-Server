@@ -5,7 +5,7 @@ const createBlog = asyncHandler(async (req, res) => {
   const { title, description, category } = req.body;
   const images = req.files?.images?.map((el) => el.path);
 
-  if (images) req.body.image = images;
+  if (images) req.body.images = images;
   if (!title || !description || !category) throw new Error("Mising input!!");
   const response = await Blog.create(req.body);
   return res.status(200).json({
@@ -34,14 +34,7 @@ const getBlogs = asyncHandler(async (req, res) => {
       $regex: queries.category,
       $options: "i",
     };
-  // if (queries?.color) {
-  //   delete formatQueries.color;
-  //   const colorArr = queries.color?.split(",");
-  //   const colorQuery = colorArr.map((el) => ({
-  //     color: { $regex: el, $options: "i" },
-  //   }));
-  //   colorqueryOj = { $or: colorQuery };
-  // }
+
   if (req.query.q) {
     delete formatQueries.q;
     formatQueries["$or"] = [
@@ -53,18 +46,6 @@ const getBlogs = asyncHandler(async (req, res) => {
   const q = { ...colorqueryOj, ...formatQueries };
   formatQueries.color = { $regex: queries.color, $options: "i" };
   let queryCommand = Blog.find(q);
-
-  // // 2) Sorting
-  // if (req.query.sort) {
-  //   const sortBy = req.query.sort.split(",").join(" ");
-  //   queryCommand = queryCommand.sort(sortBy);
-  // }
-
-  // Filter limit
-  // if (req.query.fields) {
-  //   const fields = req.query.fields.split(",").join(" ");
-  //   queryCommand = queryCommand.select(fields);
-  // }
 
   // Pagination
   const page = +req.query.page || 1;
@@ -79,29 +60,23 @@ const getBlogs = asyncHandler(async (req, res) => {
       success: response ? true : false,
       blogs: response ? response : "Cannot get blogs",
       counts,
+      limit,
     });
   });
 });
-// const getBlogs = asyncHandler(async (req, res) => {
-//   const { title } = req.query;
-//   if (title) {
-//     const response = await Blog.find({ category: title });
-//     return res.status(200).json({
-//       success: response ? true : false,
-//       blogs: response ? response : "Cannot get blog!!!",
-//     });
-//   } else {
-//     const response = await Blog.find();
-//     return res.status(200).json({
-//       success: response ? true : false,
-//       blogs: response ? response : "Cannot get blog!!!",
-//     });
-//   }
-// });
 
 const updateBlog = asyncHandler(async (req, res) => {
   const { bid } = req.params;
-
+  let file = req.files;
+  if (file?.images) {
+    const images = file?.images?.map((el) => el.path);
+    const final = [...req.body.images.slice(1), ...images];
+    req.body.images = final.filter((item) => item.length > 1);
+  } else {
+    req.body.images = req.body?.images
+      .filter((item) => item !== (item.length === 1))
+      .slice(1);
+  }
   if (Object.keys(req.body).length === 0) throw new Error("Mising input!!");
   const response = await Blog.findByIdAndUpdate(bid, req.body, {
     new: true,
@@ -109,7 +84,7 @@ const updateBlog = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: response ? true : false,
-    category: response ? response : "Cannot update blog!!!",
+    mes: response ? "Successfully updated blog" : "Cannot update blog!!!",
   });
 });
 const deleteBlog = asyncHandler(async (req, res) => {
@@ -138,6 +113,7 @@ const likeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Cancel dislike successfully !",
     });
   }
 
@@ -152,6 +128,7 @@ const likeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Cancel like successfully !",
     });
   } else {
     const response = await Blog.findByIdAndUpdate(
@@ -162,6 +139,7 @@ const likeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Like the blog successfully !",
     });
   }
 });
@@ -182,6 +160,7 @@ const dislikeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Cancel like successfully !",
     });
   }
 
@@ -196,6 +175,7 @@ const dislikeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Cancel dislike successfully !",
     });
   } else {
     const response = await Blog.findByIdAndUpdate(
@@ -206,6 +186,7 @@ const dislikeBlog = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       rs: response,
+      mes: "Dislike the blog successfully !",
     });
   }
 });
@@ -233,7 +214,7 @@ const uploadImageBlog = asyncHandler(async (req, res) => {
   const response = await Blog.findByIdAndUpdate(
     bid,
     {
-      image: req.file.path,
+      images: req.file.path,
     },
     { new: true }
   );

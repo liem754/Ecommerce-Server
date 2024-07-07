@@ -30,6 +30,9 @@ var productSchema = new mongoose.Schema(
       type: String,
       require: true,
     },
+    subcategory: {
+      type: String,
+    },
     quantity: {
       type: Number,
       default: 0,
@@ -48,6 +51,7 @@ var productSchema = new mongoose.Schema(
     ratings: [
       {
         star: { type: Number },
+        images: { type: Array },
         postedBy: { type: mongoose.Types.ObjectId, ref: "User" },
         comment: { type: String },
         updatedAt: {

@@ -13,7 +13,7 @@ const { throwError } = require("../middlewares/errHandler");
 const register = asyncHandler(async (req, res, next) => {
   const { email, name, password, phone } = req.body;
   const user = await User.findOne({ email });
-  if (user) throwError(402, "Tài khoản đã tồn tại, vui lòng đăng nhập!", res);
+  if (user) throwError(402, "Account already exists, please login !", res);
   else {
     const token = makeToken();
     const newUser = await User.create({
@@ -27,7 +27,7 @@ const register = asyncHandler(async (req, res, next) => {
       await sendMail({
         email,
         html,
-        subject: "Hoàn tất đăng ký Digital Technology",
+        subject: "Hoàn tất đăng ký MoSaShop",
       });
     }
     setTimeout(async () => {
@@ -36,7 +36,7 @@ const register = asyncHandler(async (req, res, next) => {
 
     return res.json({
       success: newUser ? true : false,
-      mes: newUser ? "Please check email của bạn!" : "Some wrong, please!",
+      mes: newUser ? "Please check your email !" : "Some wrong, please!",
     });
   }
 });
@@ -51,7 +51,7 @@ const finalRegister = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: notActive ? true : false,
     mes: notActive
-      ? "Register is successfully!!.Please login now!"
+      ? "Register is successfully, Please login now !"
       : "Something went wrong",
   });
 });
@@ -86,7 +86,7 @@ const login = asyncHandler(async (req, res) => {
         mes: "Login success!",
       });
     } else {
-      throwError(401, "Sai password rồi !", res);
+      throwError(401, "Wrong password !", res);
     }
   } else {
     throw new Error("Invalid credentials!");
@@ -309,7 +309,7 @@ const updateUserAddress = asyncHandler(async (req, res) => {
 //
 const updateCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-  const { pid, quantity = 1, color, price, title, thumb } = req.body;
+  const { pid, quantity = 1, color, price, title, thumb, size } = req.body;
   if (!pid || !quantity || !color || !title || !thumb)
     throw new Error("Missing input!!");
   const cartUser = await User.findById(_id).select("cart");
@@ -326,20 +326,22 @@ const updateCart = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       mes: response
-        ? "Cập Nhập Giỏ Hàng Thành Công!"
+        ? "Updated Shopping Cart Successfully!"
         : "Some thing went wrong!",
     });
   } else {
     const response = await User.findByIdAndUpdate(
       _id,
       {
-        $push: { cart: { product: pid, quantity, color, price, title, thumb } },
+        $push: {
+          cart: { product: pid, quantity, color, price, title, thumb, size },
+        },
       },
       { new: true }
     );
     return res.status(200).json({
       success: response ? true : false,
-      mes: response ? "Đã Thêm Vào Giỏ Hàng!" : "Some thing went wrong!",
+      mes: response ? "Added to Cart!" : "Some thing went wrong!",
     });
   }
 });
@@ -363,7 +365,7 @@ const removeCart = asyncHandler(async (req, res) => {
   );
   return res.status(200).json({
     success: response ? true : false,
-    mes: response ? "Đã Xóa Sản Phẩm Khỏi Giỏ Hàng!" : "Some thing went wrong!",
+    mes: response ? "Product Removed From Cart !" : "Some thing went wrong!",
   });
 });
 module.exports = {

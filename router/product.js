@@ -32,12 +32,23 @@ router.put(
   ]),
   ctrls.updateProduct
 );
-router.put("/rating", verifyAccessToken, ctrls.ratings);
+router.put(
+  "/rating",
+  verifyAccessToken,
+  uploader.fields([
+    {
+      name: "images",
+      maxCount: 10,
+    },
+  ]),
+  ctrls.ratings
+);
 router.delete(
   "/deleteproduct/:pid",
   [verifyAccessToken, isAdmin],
   ctrls.deleteProduct
 );
+router.delete("/deleteproductall", ctrls.deleteProductAll);
 router.get("/", ctrls.getProducts);
 router.get("/:pid", ctrls.getProduct);
 module.exports = router;

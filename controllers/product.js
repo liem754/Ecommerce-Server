@@ -23,7 +23,7 @@ const getProduct = asyncHandler(async (req, res) => {
     path: "ratings",
     populate: {
       path: "postedBy",
-      select: "firstname lastname avatar",
+      select: "name avatar",
     },
   });
 
@@ -52,6 +52,11 @@ const getProducts = asyncHandler(async (req, res) => {
   if (queries?.category)
     formatQueries.category = {
       $regex: queries.category,
+      $options: "i",
+    };
+  if (queries?.subcategory)
+    formatQueries.subcategory = {
+      $regex: queries.subcategory,
       $options: "i",
     };
   if (queries?.color) {
@@ -132,12 +137,21 @@ const deleteProduct = asyncHandler(async (req, res) => {
     deletedProduct: deletedProduct ? deletedProduct : "Cannot delete product",
   });
 });
+const deleteProductAll = asyncHandler(async (req, res) => {
+  const deletedProduct = await Product.remove();
+  return res.status(200).json({
+    success: deletedProduct ? true : false,
+  });
+});
 
 //Rating
 const ratings = asyncHandler(async (req, res) => {
   const { _id } = req.user;
 
   const { star, comment, pid, updatedAt } = req.body;
+  const images = req.files?.images?.map((el) => el.path);
+
+  if (images) req.body.images = images;
   if (!star || !pid) throw new Error("Mising input!!");
   const ratingProduct = await Product.findById(pid);
   const alreadyRating = ratingProduct?.ratings?.find(
@@ -145,7 +159,7 @@ const ratings = asyncHandler(async (req, res) => {
   );
   if (alreadyRating) {
     // Update star and comment
-    await Product.updateOne(
+    const rs = await Product.updateOne(
       {
         ratings: { $elemMatch: alreadyRating },
       },
@@ -153,6 +167,7 @@ const ratings = asyncHandler(async (req, res) => {
         $set: {
           "ratings.$.star": star,
           "ratings.$.comment": comment,
+          "ratings.$.images": images,
           "ratings.$.updatedAt": updatedAt,
         },
       },
@@ -165,7 +180,7 @@ const ratings = asyncHandler(async (req, res) => {
     const response = await Product.findByIdAndUpdate(
       pid,
       {
-        $push: { ratings: { star, comment, postedBy: _id, updatedAt } },
+        $push: { ratings: { ...req.body, postedBy: _id } },
       },
       { new: true }
     );
@@ -181,8 +196,9 @@ const ratings = asyncHandler(async (req, res) => {
   updateProduct.totalRatings = Math.round((sumRating * 10) / ratingCount) / 10;
   await updateProduct.save();
   return res.status(200).json({
-    status: true,
-    updateProduct,
+    success: true,
+
+    mes: "Review of success!",
   });
 });
 
@@ -196,10 +212,6 @@ const uploadImageProduct = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
-  return res.status(200).json({
-    success: response ? true : false,
-    updateProduct: response,
-  });
 });
 module.exports = {
   createProduct,
@@ -209,4 +221,5 @@ module.exports = {
   deleteProduct,
   ratings,
   uploadImageProduct,
+  deleteProductAll,
 };

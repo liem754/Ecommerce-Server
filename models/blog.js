@@ -31,7 +31,7 @@ var blogSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    image: {
+    images: {
       type: Array,
     },
     author: {
