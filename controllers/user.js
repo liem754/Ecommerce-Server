@@ -320,7 +320,12 @@ const updateCart = asyncHandler(async (req, res) => {
   if (alreadyCart && alreadyCart.color === color) {
     const response = await User.updateOne(
       { cart: { $elemMatch: alreadyCart } },
-      { $set: { "cart.$.quantity": quantity, "cart.$.price": price } },
+      {
+        $set: {
+          "cart.$.quantity": alreadyCart.quantity + quantity,
+          "cart.$.price": alreadyCart.price + price,
+        },
+      },
       { new: true }
     );
     return res.status(200).json({
