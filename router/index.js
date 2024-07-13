@@ -6,7 +6,6 @@ const routerBlog = require("./blog");
 const routerBrand = require("./brand");
 const routerCoupon = require("./coupon");
 const routerBill = require("./bill");
-const routerInsert = require("./insert");
 const order = require("./order");
 const payment = require("./payment");
 const { notFound, errHandler } = require("../middlewares/errHandler");
@@ -19,7 +18,6 @@ const initRoutes = (app) => {
   app.use("/api/v1/brand", routerBrand);
   app.use("/api/v1/coupon", routerCoupon);
   app.use("/api/v1/bill", routerBill);
-  app.use("/api/v1/insert", routerInsert);
   app.use("/api/v1/order", order);
   app.use("/api/v1/payment", payment);
 
